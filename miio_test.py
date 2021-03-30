@@ -1,10 +1,11 @@
 # import miio
 import miio
 import time
+import os
 
 target = miio.airconditioningcompanionMCN.AirConditioningCompanionMcn02(
-    ip = "",
-    token = "",
+    ip = os.environ.get('MCN02_IP'),
+    token = os.environ.get('MCN02_TOKEN'),
     debug = 1,
     model = 'lumi.acpartner.mcn02'
 )
