@@ -75,9 +75,13 @@ def miio_set_swing(active):
     else:
         target.raw_command("set_ver_swing",["off"])
 
+def miio_get_load():
+    return target.raw_command("get_prop",["load_power"])[0]
+    
 
 if __name__ == '__main__':
     # print(miio_get_statu().is_on)
     # print(miio_get_temp())
     # print(miio_get_statu().mode == OperationMode.Cool)
     print(miio_get_power())
+    print(miio_get_load())

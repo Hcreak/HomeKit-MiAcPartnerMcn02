@@ -16,6 +16,11 @@ RUN pip3 install HAP-python[QRCode]
 RUN pip3 install python-miio
 RUN pip3 install PyYAML
 
+RUN apt-get install g++ -y
+RUN pip3 install SQLAlchemy
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
 ADD *.py ./
 
 CMD ["sh", "-c", "python3 -u main.py"]

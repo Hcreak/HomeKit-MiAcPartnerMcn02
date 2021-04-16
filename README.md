@@ -23,6 +23,13 @@
     docker run -d --network host --name myhap_mcn02 -e MCN02_IP= 空调伴侣IP -e MCN02_TOKEN= 空调伴侣Token hap_mcn02
 ```
 
+### macvlan network 部署
+```bash
+    docker network create -d macvlan   --subnet=10.10.10.0/24   --gateway=10.10.10.1  --ip-range=10.10.10.200/29  -o parent=eth0 mvc0
+    docker run -d --network mvc0 --name myhap_mcn02 -e MCN02_IP= 空调伴侣IP -e MCN02_TOKEN= 空调伴侣Token hap_mcn02
+```
+
+
 ## Notice
 
 1. 需自行获取空调伴侣的IP和Token
@@ -35,4 +42,4 @@
 
 3. 还是粗粮坑爹 尽管 `miio` 协议为内网通讯 但实测发现 若给空调伴侣切断外网 则发送指令正常返回但不动作 目前抓包并没有发现空调伴侣对内网扫描的情况发生 至于用不用各位自己掂量吧
 
-4. 还还还是粗粮坑爹 在对米家APP与空调伴侣通讯的 `miio` 协议抓包解析过程中 并没有发现用电量统计的数据字段 推测应该是空调伴侣上报用电量到粗粮服务器上 APP从服务器获取用电量数据 空调伴侣本身不对用电量进行存储 这样的话就没办法用 `miio` 协议去获取用电量数据来展示了
+4. 还还还是粗粮坑爹 在对米家APP与空调伴侣通讯的 `miio` 协议抓包解析过程中 并没有发现用电量统计的数据字段 推测应该是空调伴侣上报用电量到粗粮服务器上 APP从服务器获取用电量数据 空调伴侣本身不对用电量进行存储 ~~这样的话就没办法用 `miio` 协议去获取用电量数据来展示了~~ **加入电量统计功能 每分钟读取一次负载功率 计算后累加**

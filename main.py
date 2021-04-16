@@ -1,14 +1,8 @@
-"""An example of how to setup and start an Accessory.
-
-This is:
-1. Create the Accessory object you want.
-2. Add it to an AccessoryDriver, which will advertise it on the local network,
-    setup a server to answer client queries, etc.
-"""
 import logging
 import signal
 
 from miio_test import *
+from sqldata import *
 
 from pyhap.accessory import Accessory, Bridge
 from pyhap.accessory_driver import AccessoryDriver
@@ -19,22 +13,12 @@ logging.basicConfig(level=logging.INFO, format="[%(module)s] %(message)s")
 
 
 class XiaoMiAcPartnerMcn02(Accessory):
-    """Fake Temperature sensor, measuring every 3 seconds."""
 
     category = CATEGORY_AIR_CONDITIONER
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # serv_active = self.add_preload_service('Switch')
-        # serv_active.configure_char(
-        #     'On', value=False,
-        #     setter_callback=self._on_active_changed
-        # )
-
-        # serv_temp = self.add_preload_service('TemperatureSensor')
-        # self.char_temp = serv_temp.configure_char('CurrentTemperature')
-
+        
         serv_HC = self.add_preload_service(
             'HeaterCooler', ["Active",
                              "CurrentHeaterCoolerState",
@@ -55,6 +39,7 @@ class XiaoMiAcPartnerMcn02(Accessory):
 
         self.char_tarmode = serv_HC.configure_char(
             'TargetHeaterCoolerState',
+            valid_values={"Cool": 2, "Heat": 1},
             setter_callback=self._on_tarmode_changed
         )
 
@@ -126,24 +111,29 @@ class XiaoMiAcPartnerMcn02(Accessory):
 
     def _on_tarmode_changed(self, value):
         mode = miio_get_mode()
-        if value != 0:
-            if value == 2 and mode == 3:
-                return
-            if value == 1 and mode == 2:
-                return
-            miio_set_mode(value)
-            print('TargetHeaterCoolerState {}'.format(value))
+        if value == 2 and mode == 3:
+            return
+        if value == 1 and mode == 2:
+            return
+        miio_set_mode(value)
+        print('TargetHeaterCoolerState {}'.format(value))
 
 
-    @Accessory.run_at_interval(10)
+    @Accessory.run_at_interval(60)
     async def run(self):
         self.char_curtemp.set_value(miio_get_temp())
+
+        load_power = miio_get_load()
+        energy = compute_energy(load_power)
+
+        put_load_power(load_power)
+        put_energy_count_day(energy)
+        put_energy_count_month(energy)
 
 
 def get_accessory(driver):
     """Call this method to get a standalone Accessory."""
     return XiaoMiAcPartnerMcn02(driver, 'MyAcPartner')
-
 
 # Start the accessory on port 51826
 driver = AccessoryDriver(port=51826)
