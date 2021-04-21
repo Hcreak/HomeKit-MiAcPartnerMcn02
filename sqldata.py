@@ -93,3 +93,36 @@ def put_energy_count_month(energy):
         queryresult[0].energy_count += energy
         session.commit()
     session.close()
+
+def transform_dict(sqlalchemyListObj):
+    transform_result = []
+    for i in sqlalchemyListObj:
+        item = i.__dict__
+        del item['_sa_instance_state']
+        transform_result.append(item)
+    return transform_result
+
+def transform_timestamp(int_day):
+    struct_time = time.strptime(str(int_day), "%y%m%d")
+    start_timestamp = time.mktime(struct_time)
+    end_timestamp = start_timestamp + 86400
+    return start_timestamp, end_timestamp
+
+def get_energy_count_month():
+    session = DBSession()
+    queryresult = session.query(Month).all()
+    session.close()
+    return transform_dict(queryresult)
+
+def get_energy_count_day(month):
+    session = DBSession()
+    queryresult = session.query(Day).filter(Day.day.like('{}%'.format(month))).all()
+    session.close()
+    return transform_dict(queryresult)
+
+def get_load_power(day):
+    start, end = transform_timestamp(day)
+    session = DBSession()
+    queryresult = session.query(Each).filter(Each.timestamp.between(start, end)).all()
+    session.close()
+    return transform_dict(queryresult)

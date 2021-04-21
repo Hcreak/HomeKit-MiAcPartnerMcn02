@@ -21,6 +21,8 @@ RUN pip3 install SQLAlchemy
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
+RUN pip3 install flask
+
 ADD *.py ./
 
 CMD ["sh", "-c", "python3 -u main.py"]

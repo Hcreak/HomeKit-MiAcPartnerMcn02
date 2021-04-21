@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  	<meta charset="utf-8">
+	<title>Electricity Statistics</title>
+	<meta name="viewport" content="width=device-width, initial-scale=0">
+    <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/3.0.0-beta.14/chart.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.5.0/jquery.min.js"></script>
+</head>
+<body onload="month()">
+    <h1>HomeKit-MiAcPartnerMcn02</h1>    
+    <hr>
+
+    <canvas id="myChart_month"></canvas>
+    <br>
+    <canvas id="myChart_day"></canvas>
+    <br>
+    <canvas id="myChart_each"></canvas>
+
+    <script>
+        //验证canvas画布是否为空函数
+        function isCanvasBlank(canvas) {
+            var blank = document.createElement('canvas');//系统获取一个空canvas对象
+            blank.width = canvas.width;
+            blank.height = canvas.height;
+            return canvas.toDataURL() == blank.toDataURL();//比较值相等则为空
+        }
+
+        function myChart_month(datas) {
+            const labels = [];
+            const datapoints = [];
+            
+            datas.forEach(element => {
+                labels.push(element.month);
+                datapoints.push(element.energy_count);
+            });
+
+            const data = {
+                labels: labels,
+                datasets: [
+                    {
+                        data: datapoints,
+                        borderColor: '#00A0E9',
+                        fill: false,
+                        cubicInterpolationMode: 'monotone',
+                        tension: 0.4
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Monthly Electricity Consumption'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: false,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Electricity (kWh)'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    events: ['click'],
+                    onClick: (e) => {
+                        if (e.chart.getActiveElements().length != 0) {
+                            var index = e.chart.getActiveElements()[0].index;
+                            var int_month = e.chart.scales.x.ticks[index].label;
+                            day(int_month);
+                        }
+                    }
+                },
+            };
+
+            Chart_m = new Chart($("#myChart_month"), config);
+        }
+
+        function myChart_day(datas) {
+
+            if (!isCanvasBlank($("#myChart_day")[0]))
+                Chart_d.destroy()
+
+            const labels = [];
+            const datapoints = [];
+            
+            datas.forEach(element => {
+                labels.push(element.day);
+                datapoints.push(element.energy_count);
+            });
+
+            const data = {
+                labels: labels,
+                datasets: [
+                    {
+                        data: datapoints,
+                        borderColor: '#00A0E9',
+                        fill: false,
+                        cubicInterpolationMode: 'monotone',
+                        tension: 0.4
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Daily Electricity Consumption'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: false,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Electricity (kWh)'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 30
+                        }
+                    },
+                    events: ['click'],
+                    onClick: (e) => {
+                        if (e.chart.getActiveElements().length != 0) {
+                            var index = e.chart.getActiveElements()[0].index;
+                            var int_day = e.chart.scales.x.ticks[index].label;
+                            each(int_day);
+                        }
+                    }
+                },
+            };
+
+            Chart_d = new Chart($("#myChart_day"), config);
+        }
+
+        function myChart_each(datas) {
+
+            if (!isCanvasBlank($("#myChart_each")[0]))
+                Chart_e.destroy()
+
+            const labels = [];
+            const datapoints = [];
+
+            datas.forEach(element => {
+                str_time = new Date(element.timestamp*1000).toLocaleTimeString("zh-TW",{hour12:false});
+                labels.push(str_time);
+                datapoints.push(element.load_power);
+            });
+
+            const data = {
+                labels: labels,
+                datasets: [
+                    {
+                        data: datapoints,
+                        borderColor: '#00A0E9',
+                        fill: false,
+                        cubicInterpolationMode: 'monotone',
+                        tension: 0.4
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Power raw data'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: false,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Power (W)'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 2200
+                        }
+                    }
+                },
+            };
+
+            Chart_e = new Chart($("#myChart_each"), config);
+        }
+    </script>
+
+    <script>
+        function month() {
+            $.ajax({
+                url: "/month",
+                method: 'GET',
+                dataType: 'json',
+                success:function(result){
+                    myChart_month(result);
+                },
+                error:function(xhr){
+                    alert("Error： " + xhr.status + " " + xhr.statusText);
+                }
+            });   
+        }
+
+        function day(int_month) {
+            $.ajax({
+                url: "/day",
+                method: 'GET',
+                data: { month: int_month },
+                dataType: 'json',
+                success:function(result){
+                    myChart_day(result);
+                },
+                error:function(xhr){
+                    alert("Error： " + xhr.status + " " + xhr.statusText);
+                }
+            });   
+        }
+
+        function each(int_day) {
+            $.ajax({
+                url: "/each",
+                method: 'GET',
+                data: { day: int_day },
+                dataType: 'json',
+                success:function(result){
+                    myChart_each(result);
+                },
+                error:function(xhr){
+                    alert("Error： " + xhr.status + " " + xhr.statusText);
+                }
+            });   
+        }
+    </script>
+
+</body>
+</html>
