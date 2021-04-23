@@ -1,6 +1,8 @@
 FROM arm32v7/python:3.8-slim
 
-RUN python3 -m pip install --upgrade pip
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pip -U
+RUN pip config set global.index-url http://pypi.doubanio.com/simple/
+RUN pip config set global.trusted-host pypi.doubanio.com
 
 RUN apt-get update -y && apt-get install gcc -y
 
@@ -23,6 +25,9 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 RUN pip3 install flask
 
-ADD *.py ./
+ADD *.py /app/
+ADD templates /app/templates
+
+WORKDIR /app
 
 CMD ["sh", "-c", "python3 -u main.py"]

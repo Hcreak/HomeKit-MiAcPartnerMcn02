@@ -143,7 +143,7 @@ def run_webshow():
 if __name__ == '__main__':
     # 先启动flask 防止线程阻塞
     import _thread
-    _thread.start_new_thread(run_webshow)
+    _thread.start_new_thread(run_webshow, ())
 
     # Start the accessory on port 51826
     driver = AccessoryDriver(port=51826)
