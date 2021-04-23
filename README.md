@@ -3,8 +3,8 @@
 专用于丐版粗粮空调伴侣2（lumi.acpartner.mcn02） 接入HomeKit
 
 ## Require
-  * HAP-python[QRCode]
-  * python-miio
+  * [HAP-python[QRCode]](https://github.com/ikalchev/HAP-python)
+  * [python-miio](https://github.com/rytilahti/python-miio)
 
 ## Usage
 

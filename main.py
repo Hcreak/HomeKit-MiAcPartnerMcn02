@@ -11,7 +11,7 @@ import pyhap.loader as loader
 from pyhap.const import CATEGORY_AIR_CONDITIONER
 
 logging.basicConfig(level=logging.INFO, format="[%(module)s] %(message)s")
-
+import time
 
 class XiaoMiAcPartnerMcn02(Accessory):
 
@@ -20,108 +20,64 @@ class XiaoMiAcPartnerMcn02(Accessory):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+        # https://github.com/ikalchev/HAP-python/blob/dev/pyhap/resources/services.json#L514
         serv_HC = self.add_preload_service(
-            'HeaterCooler', ["Active",
-                             "CurrentHeaterCoolerState",
-                             "TargetHeaterCoolerState",
+            'Thermostat', ["CurrentHeatingCoolingState",
+                             "TargetHeatingCoolingState",
                              "CurrentTemperature",
-                             "SwingMode",
-                             "CoolingThresholdTemperature",
-                             "HeatingThresholdTemperature",
-                             "RotationSpeed"]
+                             "TargetTemperature",
+                             "TemperatureDisplayUnits"]
         )
 
-        self.char_active = serv_HC.configure_char(
-            'Active',
-            setter_callback=self._on_active_changed
-        )
+        # https://github.com/ikalchev/HAP-python/blob/dev/pyhap/resources/characteristics.json#L319
+        self.char_curmode = serv_HC.configure_char('CurrentHeatingCoolingState')
 
-        self.char_curmode = serv_HC.configure_char('CurrentHeaterCoolerState')
-
+        # https://github.com/ikalchev/HAP-python/blob/dev/pyhap/resources/characteristics.json#L1401
         self.char_tarmode = serv_HC.configure_char(
-            'TargetHeaterCoolerState',
-            valid_values={"Cool": 2, "Heat": 1},
+            'TargetHeatingCoolingState',
+            valid_values={"Cool": 2, "Heat": 1, "Off": 0},
             setter_callback=self._on_tarmode_changed
         )
 
         self.char_curtemp = serv_HC.configure_char('CurrentTemperature')
 
-        self.char_swing = serv_HC.configure_char(
-            'SwingMode',
-            setter_callback=self._on_swing_changed
+        self.char_tartemp = serv_HC.configure_char(
+            'TargetTemperature', value=miio_get_temp(),
+            setter_callback=self._on_tartemp_changed
         )
 
-        self.char_tartempC = serv_HC.configure_char(
-            'CoolingThresholdTemperature',
-            setter_callback=self._on_tartempC_changed
-        )
-
-        self.char_tartempH = serv_HC.configure_char(
-            'HeatingThresholdTemperature',
-            setter_callback=self._on_tartempH_changed
-        )
-
-        self.char_fanspeed = serv_HC.configure_char(
-            'RotationSpeed',
-            setter_callback=self._on_fanspeed_changed
-        )
+        serv_HC.configure_char('TemperatureDisplayUnits', value=0)
 
 
-        self.char_active.set_value(miio_get_power())
-        mode = miio_get_mode()
-        self.char_curmode.set_value(mode)
-        if mode == 3:
-            self.char_tarmode.set_value(2)
-            self.char_tartempC.set_value(miio_get_temp())
-            self.char_tartempH.set_value(18)
-        else:
-            if mode == 2:
-                self.char_tarmode.set_value(1)
-                self.char_tartempH.set_value(miio_get_temp())
-                self.char_tartempC.set_value(24)
-            else:
-                self.char_tartempC.set_value(24)
-                self.char_tartempH.set_value(18)
-        self.char_curtemp.set_value(miio_get_temp())
-        self.char_swing.set_value(miio_get_swing())
-        self.char_fanspeed.set_value(miio_get_fanspeed())
-
-
-    def _on_active_changed(self, value):
-        if miio_get_power() != value:
-            miio_set_power(value)
-            print('Turn %s' % ('on' if value else 'off'))
-
-    def _on_tartempC_changed(self, value):
-        if self.char_tarmode.get_value() == 2:
-            miio_set_temp(value)
-            print('CoolingThresholdTemperature {}'.format(value))
-
-    def _on_tartempH_changed(self, value):
-        if self.char_tarmode.get_value() == 1:
-            miio_set_temp(value)
-            print('HeatingThresholdTemperature {}'.format(value))
-
-    def _on_fanspeed_changed(self, value):
-        miio_set_fanspeed(value)
-        print('RotationSpeed {}'.format(value))
-
-    def _on_swing_changed(self, value):
-        miio_set_swing(value)
-        print('SwingMode {}'.format(value))
+    def _on_tartemp_changed(self, value):
+        miio_set_temp(value)
+        print('[{}] TargetTemperature {}'.format(time.asctime(time.localtime()), value))
 
     def _on_tarmode_changed(self, value):
-        mode = miio_get_mode()
-        if value == 2 and mode == 3:
+        # 让Siri开启空调会打到自动模式 强行更改目标模式为关机前状态 继续执行
+        if value == 3:
+            value = miio_get_mode()
+            self.char_tarmode.set_value(value)
+        
+        if value == self.char_curmode.value:
             return
-        if value == 1 and mode == 2:
-            return
-        miio_set_mode(value)
-        print('TargetHeaterCoolerState {}'.format(value))
+
+        if value == 0:
+            miio_set_power(False)
+            print('Turn off')
+        else:
+            if self.char_curmode.value == 0:
+                miio_set_power(True)
+                print('Turn on')
+            if value != miio_get_mode():
+                miio_set_mode(value)
+        print('[{}] TargetHeatingCoolingState {}'.format(time.asctime(time.localtime()), value))
+        self.char_curmode.set_value(value)
 
 
     @Accessory.run_at_interval(60)
     async def run(self):
+        self.char_curmode.set_value(miio_get_mode_new())
         self.char_curtemp.set_value(miio_get_temp())
 
         load_power = miio_get_load()
@@ -143,7 +99,7 @@ def run_webshow():
 if __name__ == '__main__':
     # 先启动flask 防止线程阻塞
     import _thread
-    _thread.start_new_thread(run_webshow)
+    _thread.start_new_thread(run_webshow,())
 
     # Start the accessory on port 51826
     driver = AccessoryDriver(port=51826)
