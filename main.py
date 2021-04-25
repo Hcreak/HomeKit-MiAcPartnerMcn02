@@ -34,7 +34,7 @@ class XiaoMiAcPartnerMcn02(Accessory):
 
         # https://github.com/ikalchev/HAP-python/blob/dev/pyhap/resources/characteristics.json#L1401
         self.char_tarmode = serv_HC.configure_char(
-            'TargetHeatingCoolingState',
+            'TargetHeatingCoolingState', value=miio_get_mode_new(),
             valid_values={"Cool": 2, "Heat": 1, "Off": 0},
             setter_callback=self._on_tarmode_changed
         )
@@ -77,15 +77,18 @@ class XiaoMiAcPartnerMcn02(Accessory):
 
     @Accessory.run_at_interval(60)
     async def run(self):
-        self.char_curmode.set_value(miio_get_mode_new())
-        self.char_curtemp.set_value(miio_get_temp())
+        try:
+            self.char_curmode.set_value(miio_get_mode_new())
+            self.char_curtemp.set_value(miio_get_temp())
 
-        load_power = miio_get_load()
-        energy = compute_energy(load_power)
+            load_power = miio_get_load()
+            energy = compute_energy(load_power)
 
-        put_load_power(load_power)
-        put_energy_count_day(energy)
-        put_energy_count_month(energy)
+            put_load_power(load_power)
+            put_energy_count_day(energy)
+            put_energy_count_month(energy)
+        except BaseException as e:
+            print('[{}] {}'.format(time.asctime(time.localtime()), e))
 
 
 def get_accessory(driver):
