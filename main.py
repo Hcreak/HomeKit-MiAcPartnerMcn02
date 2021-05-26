@@ -50,6 +50,9 @@ class XiaoMiAcPartnerMcn02(Accessory):
 
 
     def _on_tartemp_changed(self, value):
+        # 修复关机后设定温度指令会开机的Bug
+        if self.char_curmode.value == 0:
+            return
         miio_set_temp(value)
         print('[{}] TargetTemperature {}'.format(time.asctime(time.localtime()), value))
 
